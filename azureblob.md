@@ -1,5 +1,342 @@
-Here's a complete step-by-step guide to create Azure Blob Storage:
+# Azure CLI Commands for Blob Storage
 
+## Storage Account Management
+
+### Create Storage Account
+```bash
+# Basic storage account creation
+az storage account create \
+    --name mystorageaccount \
+    --resource-group myResourceGroup \
+    --location eastus \
+    --sku Standard_LRS \
+    --kind StorageV2
+
+# Advanced storage account with specific options
+az storage account create \
+    --name mystorageaccount \
+    --resource-group myResourceGroup \
+    --location eastus \
+    --sku Standard_GRS \
+    --kind StorageV2 \
+    --access-tier Hot \
+    --https-only true \
+    --allow-blob-public-access false
+```
+
+### List Storage Accounts
+```bash
+# List all storage accounts in subscription
+az storage account list --output table
+
+# List storage accounts in specific resource group
+az storage account list --resource-group myResourceGroup --output table
+
+# Get specific storage account details
+az storage account show --name mystorageaccount --resource-group myResourceGroup
+```
+
+### Storage Account Keys
+```bash
+# Get storage account keys
+az storage account keys list --account-name mystorageaccount --resource-group myResourceGroup
+
+# Regenerate storage account key
+az storage account keys renew --account-name mystorageaccount --resource-group myResourceGroup --key key1
+
+# Get connection string
+az storage account show-connection-string --name mystorageaccount --resource-group myResourceGroup
+```
+
+### Update Storage Account
+```bash
+# Update access tier
+az storage account update --name mystorageaccount --resource-group myResourceGroup --access-tier Cool
+
+# Enable/disable public blob access
+az storage account update --name mystorageaccount --resource-group myResourceGroup --allow-blob-public-access false
+
+# Update SKU (redundancy)
+az storage account update --name mystorageaccount --resource-group myResourceGroup --sku Standard_GRS
+```
+
+### Delete Storage Account
+```bash
+# Delete storage account
+az storage account delete --name mystorageaccount --resource-group myResourceGroup --yes
+```
+
+## Container Management
+
+### Create Container
+```bash
+# Create private container
+az storage container create --name mycontainer --account-name mystorageaccount
+
+# Create container with public blob access
+az storage container create --name mycontainer --account-name mystorageaccount --public-access blob
+
+# Create container with connection string
+az storage container create --name mycontainer --connection-string "DefaultEndpointsProtocol=https;AccountName=..."
+
+# Create container with SAS token
+az storage container create --name mycontainer --account-name mystorageaccount --sas-token "?sv=2021..."
+```
+
+### List Containers
+```bash
+# List all containers
+az storage container list --account-name mystorageaccount --output table
+
+# List containers with connection string
+az storage container list --connection-string "DefaultEndpointsProtocol=https;AccountName=..." --output table
+```
+
+### Container Properties
+```bash
+# Show container properties
+az storage container show --name mycontainer --account-name mystorageaccount
+
+# Set container metadata
+az storage container metadata update --name mycontainer --account-name mystorageaccount --metadata key1=value1 key2=value2
+
+# Show container metadata
+az storage container metadata show --name mycontainer --account-name mystorageaccount
+```
+
+### Delete Container
+```bash
+# Delete container
+az storage container delete --name mycontainer --account-name mystorageaccount
+
+# Delete container with confirmation prompt bypass
+az storage container delete --name mycontainer --account-name mystorageaccount --yes
+```
+
+## Blob Operations
+
+### Upload Blobs
+```bash
+# Upload single file
+az storage blob upload --file ./myfile.txt --container-name mycontainer --name myfile.txt --account-name mystorageaccount
+
+# Upload with specific content type
+az storage blob upload --file ./image.jpg --container-name mycontainer --name images/image.jpg --account-name mystorageaccount --content-type "image/jpeg"
+
+# Upload with metadata
+az storage blob upload --file ./document.pdf --container-name mycontainer --name docs/document.pdf --account-name mystorageaccount --metadata author="John Doe" department="IT"
+
+# Upload and overwrite existing blob
+az storage blob upload --file ./myfile.txt --container-name mycontainer --name myfile.txt --account-name mystorageaccount --overwrite
+
+# Upload directory (recursive)
+az storage blob upload-batch --destination mycontainer --source ./local-folder --account-name mystorageaccount
+
+# Upload with access tier
+az storage blob upload --file ./archive.zip --container-name mycontainer --name archive.zip --account-name mystorageaccount --tier Archive
+```
+
+### Download Blobs
+```bash
+# Download single blob
+az storage blob download --container-name mycontainer --name myfile.txt --file ./downloaded-file.txt --account-name mystorageaccount
+
+# Download blob to stdout
+az storage blob download --container-name mycontainer --name myfile.txt --account-name mystorageaccount --no-progress
+
+# Download directory (recursive)
+az storage blob download-batch --source mycontainer --destination ./downloads --account-name mystorageaccount
+
+# Download with pattern matching
+az storage blob download-batch --source mycontainer --destination ./downloads --pattern "images/*" --account-name mystorageaccount
+```
+
+### List Blobs
+```bash
+# List all blobs in container
+az storage blob list --container-name mycontainer --account-name mystorageaccount --output table
+
+# List blobs with prefix
+az storage blob list --container-name mycontainer --prefix "images/" --account-name mystorageaccount --output table
+
+# List blobs with detailed information
+az storage blob list --container-name mycontainer --account-name mystorageaccount --query "[].{Name:name, Size:properties.contentLength, LastModified:properties.lastModified, Tier:properties.accessTier}" --output table
+
+# List only blob names
+az storage blob list --container-name mycontainer --account-name mystorageaccount --query "[].name" --output tsv
+```
+
+### Blob Properties and Metadata
+```bash
+# Show blob properties
+az storage blob show --container-name mycontainer --name myfile.txt --account-name mystorageaccount
+
+# Update blob metadata
+az storage blob metadata update --container-name mycontainer --name myfile.txt --account-name mystorageaccount --metadata version="1.2" status="active"
+
+# Show blob metadata
+az storage blob metadata show --container-name mycontainer --name myfile.txt --account-name mystorageaccount
+
+# Set blob properties
+az storage blob update --container-name mycontainer --name myfile.txt --account-name mystorageaccount --content-type "application/json"
+
+# Set access tier
+az storage blob set-tier --container-name mycontainer --name myfile.txt --account-name mystorageaccount --tier Cool
+```
+
+### Copy Blobs
+```bash
+# Copy blob within same storage account
+az storage blob copy start --source-container mycontainer --source-blob myfile.txt --destination-container backup --destination-blob myfile-backup.txt --account-name mystorageaccount
+
+# Copy blob from URL
+az storage blob copy start --source-uri "https://otherstorage.blob.core.windows.net/container/file.txt" --destination-container mycontainer --destination-blob copied-file.txt --account-name mystorageaccount
+
+# Copy blob with SAS token
+az storage blob copy start --source-uri "https://otherstorage.blob.core.windows.net/container/file.txt?sas-token" --destination-container mycontainer --destination-blob copied-file.txt --account-name mystorageaccount
+
+# Check copy status
+az storage blob show --container-name mycontainer --name copied-file.txt --account-name mystorageaccount --query "properties.copy"
+```
+
+### Delete Blobs
+```bash
+# Delete single blob
+az storage blob delete --container-name mycontainer --name myfile.txt --account-name mystorageaccount
+
+# Delete blob with snapshots
+az storage blob delete --container-name mycontainer --name myfile.txt --account-name mystorageaccount --delete-snapshots include
+
+# Delete blobs with pattern
+az storage blob delete-batch --source mycontainer --pattern "temp/*" --account-name mystorageaccount
+
+# Soft delete (if enabled)
+az storage blob undelete --container-name mycontainer --name myfile.txt --account-name mystorageaccount
+```
+
+## Security and Access Management
+
+### Shared Access Signatures (SAS)
+```bash
+# Generate account-level SAS token
+az storage account generate-sas --account-name mystorageaccount --resource-types sco --services b --permissions rwdl --expiry 2024-12-31T23:59:00Z
+
+# Generate container-level SAS token
+az storage container generate-sas --name mycontainer --account-name mystorageaccount --permissions rwdl --expiry 2024-12-31T23:59:00Z
+
+# Generate blob-level SAS token
+az storage blob generate-sas --container-name mycontainer --name myfile.txt --account-name mystorageaccount --permissions rwd --expiry 2024-12-31T23:59:00Z
+
+# Generate SAS with IP restrictions
+az storage blob generate-sas --container-name mycontainer --name myfile.txt --account-name mystorageaccount --permissions r --expiry 2024-12-31T23:59:00Z --ip "192.168.1.0/24"
+```
+
+### Access Policies
+```bash
+# Create stored access policy
+az storage container policy create --container-name mycontainer --name mypolicy --account-name mystorageaccount --permissions rwdl --expiry 2024-12-31T23:59:00Z
+
+# List access policies
+az storage container policy list --container-name mycontainer --account-name mystorageaccount
+
+# Update access policy
+az storage container policy update --container-name mycontainer --name mypolicy --account-name mystorageaccount --permissions r
+
+# Delete access policy
+az storage container policy delete --container-name mycontainer --name mypolicy --account-name mystorageaccount
+```
+
+## Monitoring and Logging
+
+### Enable Logging
+```bash
+# Enable storage analytics logging
+az storage logging update --account-name mystorageaccount --services b --log rwde --retention 7
+
+# Show logging configuration
+az storage logging show --account-name mystorageaccount --services b
+```
+
+### Metrics
+```bash
+# Enable storage analytics metrics
+az storage metrics update --account-name mystorageaccount --services b --api true --hour true --minute false --retention 7
+
+# Show metrics configuration
+az storage metrics show --account-name mystorageaccount --services b
+```
+
+## Useful Query Examples
+
+### Advanced Listing with Filters
+```bash
+# List large blobs (>1MB)
+az storage blob list --container-name mycontainer --account-name mystorageaccount --query "[?properties.contentLength > \`1048576\`].{Name:name, Size:properties.contentLength}" --output table
+
+# List blobs modified in last 7 days
+az storage blob list --container-name mycontainer --account-name mystorageaccount --query "[?properties.lastModified >= '$(date -d '7 days ago' -u +%Y-%m-%dT%H:%M:%SZ)'].{Name:name, Modified:properties.lastModified}" --output table
+
+# List blobs by access tier
+az storage blob list --container-name mycontainer --account-name mystorageaccount --query "[?properties.accessTier == 'Hot'].name" --output tsv
+```
+
+### Batch Operations
+```bash
+# Set tier for multiple blobs
+az storage blob list --container-name mycontainer --account-name mystorageaccount --query "[].name" --output tsv | \
+while read blob; do
+    az storage blob set-tier --container-name mycontainer --name "$blob" --account-name mystorageaccount --tier Cool
+done
+
+# Download all blobs with specific extension
+az storage blob download-batch --source mycontainer --destination ./downloads --pattern "*.pdf" --account-name mystorageaccount
+```
+
+## Environment Variables
+
+```bash
+# Set default storage account (to avoid repeating --account-name)
+export AZURE_STORAGE_ACCOUNT=mystorageaccount
+
+# Set storage account key
+export AZURE_STORAGE_KEY=your-storage-key
+
+# Set connection string
+export AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=..."
+
+# Now you can run commands without specifying account info
+az storage container list
+az storage blob list --container-name mycontainer
+```
+
+## Common Command Patterns
+
+### Using Connection String
+```bash
+# Most commands support --connection-string instead of --account-name
+az storage blob upload --file ./myfile.txt --container-name mycontainer --name myfile.txt --connection-string "DefaultEndpointsProtocol=https;..."
+```
+
+### Using SAS Token
+```bash
+# Use SAS token for authentication
+az storage blob upload --file ./myfile.txt --container-name mycontainer --name myfile.txt --account-name mystorageaccount --sas-token "?sv=2021..."
+```
+
+### Output Formats
+```bash
+# Table format (human readable)
+az storage blob list --container-name mycontainer --account-name mystorageaccount --output table
+
+# JSON format (default)
+az storage blob list --container-name mycontainer --account-name mystorageaccount --output json
+
+# TSV format (tab-separated, good for scripting)
+az storage blob list --container-name mycontainer --account-name mystorageaccount --output tsv
+
+# YAML format
+az storage blob list --container-name mycontainer --account-name mystorageaccount --output yaml
+```
 ## Step 1: Sign in to Azure Portal
 1. Go to [portal.azure.com](https://portal.azure.com)
 2. Sign in with your Azure account credentials
